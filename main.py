@@ -4,7 +4,10 @@ import random
 from pathlib import Path
 
 from game_map import GameMap
-from world import GameWorld
+from procgen import generate_asteroid_field
+from ecs import ECS, Entity
+from components.position import Position
+from components.renderable import Renderable
 
 WIDTH, HEIGHT = 120, 80
 
@@ -20,31 +23,32 @@ def main() -> None:
 
     console = tcod.console.Console(WIDTH, HEIGHT, order="F")
     context = tcod.context.new(
-        columns=console.width, rows=console.height,
-        title="QudLike – Asteroidenfeld (Chunk-System)",
+        columns=console.width,
+        rows=console.height,
+        title="QudLike – ECS + FOV",
         tileset=tileset,
     )
 
-    world = GameWorld(chunk_width=WIDTH, chunk_height=HEIGHT)
-    game_map = world.get_current_map()
+    # Karte generieren
+    game_map = generate_asteroid_field(WIDTH, HEIGHT)
 
-    # Spieler-Start
-    player_x = WIDTH // 2
-    player_y = HEIGHT // 2
-    while not game_map.tiles["walkable"][player_x, player_y]:
-        player_x = random.randint(20, WIDTH - 20)
-        player_y = random.randint(20, HEIGHT - 20)
+    # ECS initialisieren
+    ecs = ECS()
+
+    # Spieler als Entity erstellen
+    player = ecs.create_entity()
+    player_pos = Position(WIDTH // 2, HEIGHT // 2)
+    ecs.add_component(player, player_pos)
+    ecs.add_component(player, Renderable("@", (255, 255, 255)))
 
     fov_radius = 12
-    print("=== Chunk-System gestartet ===")
-    print(f"Start-Chunk: ({world.current_cx}, {world.current_cy})")
-    print("Gehen Sie bis zum Rand – Chunk-Wechsel sollte jetzt funktionieren.")
+    print("ECS + FOV gestartet. Der Lichtkegel sollte wieder sichtbar sein.")
 
     while True:
-        # FOV
+        # === FOV BERECHNEN (wichtig!) ===
         game_map.visible = tcod.map.compute_fov(
             transparency=game_map.tiles["transparent"],
-            pov=(player_x, player_y),
+            pov=(player_pos.x, player_pos.y),   # Position aus der Entity
             radius=fov_radius,
             light_walls=True,
             algorithm=tcod.FOV_SHADOW
@@ -52,25 +56,23 @@ def main() -> None:
         game_map.explored |= game_map.visible
 
         console.clear()
+
+        # Karte mit FOV rendern
         game_map.render(console)
 
-        # Chunk-Rand-Markierung (zur visuellen Kontrolle)
-        for x in range(WIDTH):
-            console.print(x, 0, "─", fg=(100, 100, 100))
-            console.print(x, HEIGHT-1, "─", fg=(100, 100, 100))
-        for y in range(HEIGHT):
-            console.print(0, y, "│", fg=(100, 100, 100))
-            console.print(WIDTH-1, y, "│", fg=(100, 100, 100))
+        # Spieler rendern (über ECS)
+        rend = ecs.get_component(player, Renderable)
+        if rend:
+            console.print(player_pos.x, player_pos.y, rend.char, fg=rend.fg)
 
-        console.print(player_x, player_y, "@", fg=(255, 255, 255))
         context.present(console)
 
-        # Eingabe & Bewegung
+        # Bewegung
         for event in tcod.event.wait():
             if isinstance(event, tcod.event.Quit):
                 raise SystemExit()
 
-            elif isinstance(event, tcod.event.KeyDown):
+            if isinstance(event, tcod.event.KeyDown):
                 dx = dy = 0
                 if event.sym == tcod.event.KeySym.UP:    dy = -1
                 elif event.sym == tcod.event.KeySym.DOWN:  dy = 1
@@ -80,40 +82,14 @@ def main() -> None:
                 if dx == 0 and dy == 0:
                     continue
 
-                new_x = player_x + dx
-                new_y = player_y + dy
+                new_x = player_pos.x + dx
+                new_y = player_pos.y + dy
 
-                chunk_changed = False
+                if (game_map.in_bounds(new_x, new_y) and 
+                    game_map.tiles["walkable"][new_x, new_y]):
+                    player_pos.x = new_x
+                    player_pos.y = new_y
 
-                # === CHUNK-WECHSEL VOR der normalen Kollisionsprüfung ===
-                if new_x < 0:
-                    world.change_chunk(-1, 0)
-                    new_x = WIDTH - 1
-                    chunk_changed = True
-                elif new_x >= WIDTH:
-                    world.change_chunk(1, 0)
-                    new_x = 0
-                    chunk_changed = True
-                elif new_y < 0:
-                    world.change_chunk(0, -1)
-                    new_y = HEIGHT - 1
-                    chunk_changed = True
-                elif new_y >= HEIGHT:
-                    world.change_chunk(0, 1)
-                    new_y = 0
-                    chunk_changed = True
-
-                if chunk_changed:
-                    game_map = world.get_current_map()
-                    print(f"→ Chunk gewechselt! Neuer Chunk: ({world.current_cx}, {world.current_cy})")
-
-                # Normale Bewegung innerhalb des aktuellen (oder neuen) Chunks
-                if game_map.in_bounds(new_x, new_y) and game_map.tiles["walkable"][new_x, new_y]:
-                    player_x, player_y = new_x, new_y
-                elif chunk_changed:
-                    # Falls nach Chunk-Wechsel das neue Feld blockiert ist, trotzdem setzen
-                    player_x, player_y = new_x, new_y
-                    print("   Hinweis: Neues Feld war blockiert, Spieler wurde trotzdem gesetzt.")
 
 if __name__ == "__main__":
     main()
