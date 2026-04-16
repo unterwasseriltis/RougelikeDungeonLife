@@ -1,42 +1,52 @@
 # VoidDrifter – Raumschiff Roguelike
 
-Ein turn-basiertes Roguelike im Weltraum, entwickelt in Python mit python-tcod.
+**VoidDrifter** ist ein turn-basiertes Roguelike im Weltraum-Setting.  
+Du steuerst den letzten Überlebenden eines zerstörten Raumschiffs, der durch gefährliche Asteroidenfelder navigieren muss. Erkunde prozedural generierte Sektoren, kämpfe gegen mutierte Raumkreaturen und versuche, so lange wie möglich zu überleben.
 
-Sie steuern einen einsamen Überlebenden in einem zerstörten Raumschiff, der durch gefährliche Asteroidenfelder navigiert. Erkunden Sie prozedural generierte Sektoren, kämpfen Sie gegen mutierte Raumkreaturen und versuchen Sie, am Leben zu bleiben.
+Das Projekt befindet sich in einer frühen, aber technisch soliden Entwicklungsphase und dient als Grundlage für ein atmosphärisches Hard-Science-Fiction-Roguelike.
 
 ### Aktueller Entwicklungsstand
 
-- Prozedurale Generierung von Asteroidenfeldern (Cellular Automata)
-- Chunk-basiertes Weltsystem (unendlich erweiterbare Karte)
-- Vollständiges Entity-Component-System (ECS)
-- Field of View mit Fog of War
-- HP-System mit klarer Anzeige
-- Schadens- und Todesbehandlung mit Game Over Screen
-- Erste KI-gesteuerte Kreatur (Raumdrifter), die sich zufällig bewegt
-- Saubere System-Architektur (Input, Movement, Render, AI, Damage)
-
-### Technologien
-
-- **Python 3**
-- **python-tcod** (libtcod)
-- Entity-Component-System (ECS)
-- NumPy für effiziente Kartenverarbeitung
+#### Kern-Features
+- **Prozedurale Generierung** von Asteroidenfeldern mittels Cellular Automata
+- **Unendlich erweiterbare Welt** durch Chunk-System (derzeit deaktiviert)
+- **Vollständiges Entity-Component-System (ECS)** mit klarer Trennung von Daten und Logik
+- **Field of View** mit Fog of War (Sichtfeld + erkundete Bereiche)
+- **HP-System** mit klarer, mittig unten platzierter Leiste
+- **Schadens- und Todesbehandlung** inklusive Game Over Screen
+- **Erste KI-gesteuerte Kreatur**: „Raumdrifter“ – bewegt sich zufällig
+- **Nahkampf-System**: Der Spieler kann Kreaturen angreifen, wenn er direkt daneben steht
+- **Render Order** – Entities werden in der richtigen Reihenfolge gezeichnet
+- Saubere System-Architektur (InputSystem, MovementSystem, RenderSystem, AISystem, DamageSystem, CombatSystem)
 
 ### Steuerung
 
 - **Pfeiltasten** → Bewegung
-- **T** → Test-Schaden am Spieler (zum Testen)
-- **ESC** → Beenden (bei Game Over)
+- **Leertaste** oder **A** → Nahkampfangriff (wenn direkt neben einer Kreatur)
+- **T** → Test-Schaden am Spieler (zum Debuggen)
+- **ESC** → Spiel beenden (bei Game Over)
 
-### Installation
+### Technische Umsetzung
+
+- **Sprache**: Python 3.11+
+- **Bibliothek**: python-tcod (libtcod)
+- **Architektur**: Entity-Component-System (ECS)
+- **Kartenverarbeitung**: NumPy + strukturierte Arrays
+- **Rendering**: Tile-basiert mit Field of View
+
+### Installation & Ausführung
 
 ```bash
 git clone https://github.com/IhrBenutzername/VoidDrifter.git
 cd VoidDrifter
 
+# Virtuelle Umgebung erstellen
 python -m venv venv
-venv\Scripts\activate        # Windows
-# source venv/bin/activate   # macOS/Linux
+venv\Scripts\activate          # Windows
+# source venv/bin/activate     # macOS / Linux
 
+# Abhängigkeiten installieren
 pip install tcod
+
+# Spiel starten
 python main.py
