@@ -11,7 +11,7 @@ from components.renderable import Renderable
 from components.actor import Actor
 from components.fighter import Fighter
 from components.death import Death
-from systems import RenderSystem, MovementSystem, InputSystem, DamageSystem, AISystem
+from systems import RenderSystem, MovementSystem, InputSystem, DamageSystem, AISystem, CombatSystem
 
 WIDTH, HEIGHT = 120, 80
 
@@ -29,33 +29,32 @@ def main() -> None:
     context = tcod.context.new(
         columns=console.width,
         rows=console.height,
-        title="QudLike – Erste Kreatur",
+        title="QudLike – Nahkampf-System",
         tileset=tileset,
     )
 
     game_map = generate_asteroid_field(WIDTH, HEIGHT)
     ecs = ECS()
 
-    # === Spieler ===
+    # Spieler
     player = ecs.create_entity()
     ecs.add_component(player, Position(WIDTH // 2, HEIGHT // 2))
     ecs.add_component(player, Renderable("@", (255, 255, 255), render_order=3))
     ecs.add_component(player, Actor(name="Spieler"))
     ecs.add_component(player, Fighter(hp=30, max_hp=30))
 
-    # === Erste Kreatur: Raumdrifter ===
+    # Raumdrifter
     drifter = ecs.create_entity()
     drifter_x = WIDTH // 2 + 12
     drifter_y = HEIGHT // 2 - 8
     ecs.add_component(drifter, Position(drifter_x, drifter_y))
-    ecs.add_component(drifter, Renderable("d", (180, 100, 255), render_order=2))  # Lila "d"
+    ecs.add_component(drifter, Renderable("d", (180, 100, 255), render_order=2))
     ecs.add_component(drifter, Actor(name="Raumdrifter"))
     ecs.add_component(drifter, Fighter(hp=12, max_hp=12))
 
     fov_radius = 12
-    print("Erste Kreatur (Raumdrifter) hinzugefügt. Drücke 'T' für Test-Schaden.")
-
-    game_over = False
+    print("Nahkampf-System aktiv.")
+    print("Gehe direkt neben den Drifter und drücke LEERTASTE oder 'A' zum Angreifen.")
 
     while True:
         player_pos = ecs.get_component(player, Position)
@@ -76,7 +75,7 @@ def main() -> None:
         game_map.render(console)
         RenderSystem.render(console, ecs)
 
-        # HP-Anzeige mittig unten
+        # HP-Anzeige
         if player_fighter and not player_dead:
             hp_text = f" HP: {player_fighter.hp} / {player_fighter.max_hp} "
             bar_width = 40
@@ -96,7 +95,7 @@ def main() -> None:
 
         context.present(console)
 
-        # KI aktualisieren (nur wenn Spieler lebt)
+        # KI aktualisieren
         if not player_dead:
             AISystem.update(ecs, game_map)
 
@@ -111,7 +110,19 @@ def main() -> None:
                         raise SystemExit()
                     continue
 
-                # Test-Schaden mit 'T' (auf Spieler)
+                # === NAHKAMPF ===
+                if event.sym in (tcod.event.KeySym.SPACE, tcod.event.KeySym.a):
+                    drifter_pos = ecs.get_component(drifter, Position)
+                    if drifter_pos:
+                        dx = abs(player_pos.x - drifter_pos.x)
+                        dy = abs(player_pos.y - drifter_pos.y)
+                        
+                        if dx <= 1 and dy <= 1 and not (dx == 0 and dy == 0):
+                            CombatSystem.attack(player, drifter, ecs)
+                        else:
+                            print("Du bist zu weit entfernt zum Angreifen.")
+
+                # Test-Schaden
                 if event.sym == tcod.event.KeySym.t:
                     DamageSystem.apply_damage(ecs, player, 8)
                     print(f"Schaden zugefügt! Verbleibende HP: {player_fighter.hp}")
