@@ -5,9 +5,11 @@ from pathlib import Path
 
 from game_map import GameMap
 from procgen import generate_asteroid_field
-from ecs import ECS, Entity
+from ecs import ECS
 from components.position import Position
 from components.renderable import Renderable
+from components.actor import Actor
+from systems import RenderSystem, MovementSystem, InputSystem
 
 WIDTH, HEIGHT = 120, 80
 
@@ -25,30 +27,31 @@ def main() -> None:
     context = tcod.context.new(
         columns=console.width,
         rows=console.height,
-        title="QudLike – ECS + FOV",
+        title="QudLike – ECS mit InputSystem",
         tileset=tileset,
     )
 
-    # Karte generieren
+    # Karte
     game_map = generate_asteroid_field(WIDTH, HEIGHT)
 
-    # ECS initialisieren
+    # ECS
     ecs = ECS()
 
-    # Spieler als Entity erstellen
+    # Spieler als Entity
     player = ecs.create_entity()
-    player_pos = Position(WIDTH // 2, HEIGHT // 2)
-    ecs.add_component(player, player_pos)
+    ecs.add_component(player, Position(WIDTH // 2, HEIGHT // 2))
     ecs.add_component(player, Renderable("@", (255, 255, 255)))
+    ecs.add_component(player, Actor(name="Spieler"))
 
     fov_radius = 12
-    print("ECS + FOV gestartet. Der Lichtkegel sollte wieder sichtbar sein.")
+    print("ECS + InputSystem + Actor gestartet.")
 
     while True:
-        # === FOV BERECHNEN (wichtig!) ===
+        # FOV
+        player_pos = ecs.get_component(player, Position)
         game_map.visible = tcod.map.compute_fov(
             transparency=game_map.tiles["transparent"],
-            pov=(player_pos.x, player_pos.y),   # Position aus der Entity
+            pov=(player_pos.x, player_pos.y),
             radius=fov_radius,
             light_walls=True,
             algorithm=tcod.FOV_SHADOW
@@ -56,39 +59,19 @@ def main() -> None:
         game_map.explored |= game_map.visible
 
         console.clear()
-
-        # Karte mit FOV rendern
         game_map.render(console)
-
-        # Spieler rendern (über ECS)
-        rend = ecs.get_component(player, Renderable)
-        if rend:
-            console.print(player_pos.x, player_pos.y, rend.char, fg=rend.fg)
-
+        RenderSystem.render(console, ecs)
         context.present(console)
 
-        # Bewegung
+        # Eingabe über InputSystem
         for event in tcod.event.wait():
             if isinstance(event, tcod.event.Quit):
                 raise SystemExit()
 
             if isinstance(event, tcod.event.KeyDown):
-                dx = dy = 0
-                if event.sym == tcod.event.KeySym.UP:    dy = -1
-                elif event.sym == tcod.event.KeySym.DOWN:  dy = 1
-                elif event.sym == tcod.event.KeySym.LEFT:  dx = -1
-                elif event.sym == tcod.event.KeySym.RIGHT: dx = 1
-
-                if dx == 0 and dy == 0:
-                    continue
-
-                new_x = player_pos.x + dx
-                new_y = player_pos.y + dy
-
-                if (game_map.in_bounds(new_x, new_y) and 
-                    game_map.tiles["walkable"][new_x, new_y]):
-                    player_pos.x = new_x
-                    player_pos.y = new_y
+                dx, dy = InputSystem.get_movement(event)
+                if dx != 0 or dy != 0:
+                    MovementSystem.handle_movement(ecs, game_map, dx, dy)
 
 
 if __name__ == "__main__":
