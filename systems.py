@@ -6,28 +6,33 @@ from components.renderable import Renderable
 from components.actor import Actor
 
 class RenderSystem:
-    """Zeichnet alle Entities mit Renderable-Komponente."""
+    """Zeichnet alle Entities sortiert nach render_order."""
     
     @staticmethod
     def render(console: tcod.console.Console, ecs: ECS) -> None:
+        # Entities nach render_order sortieren (niedrigste zuerst)
+        entities_to_render = []
         for entity, renderable in ecs.get_entities_with(Renderable):
             position = ecs.get_component(entity, Position)
             if position:
-                console.print(
-                    position.x, position.y,
-                    renderable.char,
-                    fg=renderable.fg,
-                    bg=renderable.bg
-                )
+                entities_to_render.append((renderable.render_order, position, renderable))
+        
+        # Sortieren und rendern
+        for _, position, renderable in sorted(entities_to_render):
+            console.print(
+                position.x, position.y,
+                renderable.char,
+                fg=renderable.fg,
+                bg=renderable.bg
+            )
 
 
 class MovementSystem:
-    """Bewegt Entities mit Position und Actor."""
+    """Bewegt Entities mit Actor-Komponente."""
     
     @staticmethod
     def handle_movement(ecs: ECS, game_map: GameMap, dx: int, dy: int) -> bool:
         for entity, position in ecs.get_entities_with(Position):
-            # Nur Entities mit Actor-Komponente können sich bewegen (z.B. Spieler)
             if not entity.has_component(Actor):
                 continue
                 
@@ -44,7 +49,7 @@ class MovementSystem:
 
 
 class InputSystem:
-    """Verarbeitet Tastatureingaben und gibt Bewegungsvektoren zurück."""
+    """Verarbeitet Tastatureingaben."""
     
     @staticmethod
     def get_movement(event: tcod.event.KeyDown) -> tuple[int, int]:
