@@ -1,33 +1,42 @@
-# Qud-like Roguelite
+# VoidDrifter – Raumschiff Roguelike
 
-Ein turn-basiertes Roguelite in Entwicklung, inspiriert von **Caves of Qud**.  
-Ziel ist es, eine tiefgehende, prozedural generierte Welt mit organischen Höhlen, Simulation und atmosphärischer Tile-Grafik zu schaffen.
+Ein turn-basiertes Roguelike im Weltraum, entwickelt in Python mit python-tcod.
 
-## Über das Projekt
+Sie steuern einen einsamen Überlebenden in einem zerstörten Raumschiff, der durch gefährliche Asteroidenfelder navigiert. Erkunden Sie prozedural generierte Sektoren, kämpfen Sie gegen mutierte Raumkreaturen und versuchen Sie, am Leben zu bleiben.
 
-Dieses Projekt ist ein reines Code-basiertes Roguelike, das mit **Python** und der Bibliothek **python-tcod** entwickelt wird.  
-Der Fokus liegt auf:
-- Prozeduraler Höhlengenerierung mittels Cellular Automata
-- Field of View (Sichtfeld) und Fog of War
-- Turn-basierter Bewegung
-- Modularer Architektur (vorbereitet für Entity-Component-System)
-- Visuellem Stil, der an *Caves of Qud* angelehnt ist
+### Aktueller Entwicklungsstand
 
-## Technische Grundlage
+- Prozedurale Generierung von Asteroidenfeldern (Cellular Automata)
+- Chunk-basiertes Weltsystem (unendlich erweiterbare Karte)
+- Vollständiges Entity-Component-System (ECS)
+- Field of View mit Fog of War
+- HP-System mit klarer Anzeige
+- Schadens- und Todesbehandlung mit Game Over Screen
+- Erste KI-gesteuerte Kreatur (Raumdrifter), die sich zufällig bewegt
+- Saubere System-Architektur (Input, Movement, Render, AI, Damage)
 
-- **Sprache**: Python 3.11+
-- **Bibliothek**: [python-tcod](https://github.com/libtcod/python-tcod) (Version 21.x)
-- **Entwicklungsumgebung**: Visual Studio Code
-- **Rendering**: Tile-basiertes Konsolen-Rendering mit eigenem Tileset
-- **Map-Generierung**: Cellular Automata für organische, höhlenartige Karten
+### Technologien
 
-## Features (aktueller Stand)
+- **Python 3**
+- **python-tcod** (libtcod)
+- Entity-Component-System (ECS)
+- NumPy für effiziente Kartenverarbeitung
 
-- ✅ Prozedurale Höhlengenerierung mit Cellular Automata
-- ✅ Kollisionserkennung (nur begehbare Felder)
-- ✅ Field of View mit Shadow-Casting-Algorithmus
-- ✅ Exploration-System (Fog of War: erkundete Bereiche bleiben sichtbar)
-- ✅ Saubere Trennung von Map, Rendering und Input
-- ✅ Modulare Projektstruktur
+### Steuerung
 
-## Projektstruktur
+- **Pfeiltasten** → Bewegung
+- **T** → Test-Schaden am Spieler (zum Testen)
+- **ESC** → Beenden (bei Game Over)
+
+### Installation
+
+```bash
+git clone https://github.com/IhrBenutzername/VoidDrifter.git
+cd VoidDrifter
+
+python -m venv venv
+venv\Scripts\activate        # Windows
+# source venv/bin/activate   # macOS/Linux
+
+pip install tcod
+python main.py
